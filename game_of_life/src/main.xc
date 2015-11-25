@@ -59,34 +59,16 @@ void DataInStream(char infname[], chanend c_out)
   printf( "DataInStream:Done...\n" );
   return;
 }
-void topRowProcessor(uchar grid [][IMWD], chanend ghost_top, chanend ghost_bot) {
+
+void rowProcessor(uchar grid [][IMWD], streaming chanend ghost_top, streaming chanend ghost_bot, int id) {
     uchar ghost_top_arr[IMWD], ghost_bot_arr[IMWD];
     for(int i=0; i<IMWD; i++) {
         ghost_top <: grid[0][i];
-        ghost_top :> ghost_top_arr[i];
-    }
-    for(int i=0; i<IMWD; i++) {
-        ghost_bot <: grid[7][i];
-        ghost_bot :> ghost_bot_arr[i];
-    }
-}
-void genRowProcessor(uchar grid [][IMWD], chanend ghost_top, chanend ghost_bot) {
-    uchar ghost_top_arr[IMWD], ghost_bot_arr[IMWD];
-    for(int i=0; i<IMWD; i++) {
-        ghost_top :> ghost_top_arr[i];
-        ghost_top <: grid[7][i];
-    }
-    for(int i=0; i<IMWD; i++) {
-        ghost_bot :> ghost_bot_arr[i];
         ghost_bot <: grid[0][i];
-    }
-
-}
-void rowProcessor(uchar grid [][IMWD], chanend ghost_top, chanend ghost_bot) {
-    uchar ghost_top_arr[IMWD];
-    for(int i=0; i<IMWD; i++) {
         ghost_top :> ghost_top_arr[i];
+        ghost_bot :> ghost_bot_arr[i];
     }
+    printf("%d, is done\n", id);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -122,7 +104,7 @@ void distributor(chanend c_in, chanend c_out, chanend fromAcc)
 
   uchar top_half [8][IMWD];
   uchar bot_half [8][IMWD];
-
+  printf("Splitting grid\n");
   int half = rowsPerCore;
   for( int row=0; row<half; row++) {
       for( int col=0; col<IMWD; col++) {
@@ -130,11 +112,11 @@ void distributor(chanend c_in, chanend c_out, chanend fromAcc)
           bot_half[row][col] = grid[row+half][col];
       }
   }
-
-  chan c[2];
+  printf("Creating processes\n");
+  streaming chan c[2];
   par {
-      rowProcessor(top_half, c[0], c[1]);
-      rowProcessor(bot_half, c[1], c[0]);
+      rowProcessor(top_half, c[0], c[1], 0);
+      rowProcessor(bot_half, c[1], c[0], 1);
   }
 }
 
