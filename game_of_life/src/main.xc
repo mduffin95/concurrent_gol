@@ -7,8 +7,12 @@
 #include "pgmIO.h"
 #include "i2c.h"
 
+/*---My Includes---*/
+#include "utils.h"
+
 #define  IMHT 16                  //image height
 #define  IMWD 16                  //image width
+#define  SLSZ 512                 //slice array length
 
 typedef unsigned char uchar;      //using uchar as shorthand
 
@@ -66,8 +70,8 @@ interface farmer {
 };
 
 void rowProcessor(unsigned id, static const unsigned rows, static const unsigned cols, client interface farmer i, streaming chanend ghost_top, streaming chanend ghost_bot) {
-    uchar ghost_top_arr[cols], ghost_bot_arr[cols], slice[512];
-    i.getSlice(id, slice, rows*cols);
+    uchar ghost_top_arr[cols], ghost_bot_arr[cols], slice[SLSZ];
+    i.getSlice(id, slice, SLSZ);
     while(1) {
         for(int i=0; i<IMWD; i++) {
             ghost_top <: slice[i];
@@ -75,20 +79,23 @@ void rowProcessor(unsigned id, static const unsigned rows, static const unsigned
             ghost_top :> ghost_top_arr[i];
             ghost_bot :> ghost_bot_arr[i];
         }
-        i.doneIteration(id, slice, rows*cols);
+        i.doneIteration(id, slice, SLSZ);
     }
 
     printf("%d, is done\n", id);
 }
 
-void rowFarmer(server interface farmer c[n], unsigned n, uchar grid[], unsigned pos[n], unsigned size) {
+void rowFarmer(server interface farmer c[n], unsigned n, uchar grid[], unsigned size) {
     while(1) {
         select {
-            case c[int i].getSlice(unsigned id, uchar slice[n], unsigned n):
+            case c[int i].getSlice(unsigned id, uchar slice[len], unsigned len): //If I remove len here I get an internal error :(
                 printf("Process %u is retrieving data\n", id);
-                memcpy(slice, grid+pos[id]*size, n*sizeof(uchar));
+                int remainder = size % n;
+                int rows = (size - remainder) / n;
+//                printf("remainder = %d, rows = %d, toCopy = %d\n", remainder, rows, toCopy);
+                memcpy(slice, grid+rows*id*size, ((id==n-1) ? rows+remainder : rows)*size*sizeof(uchar));
                 break;
-            case c[int i].doneIteration(unsigned id, uchar slice[n], unsigned n) -> int return_val:
+            case c[int i].doneIteration(unsigned id, uchar slice[len], unsigned len) -> int return_val:
                 printf("Process %u has finished an iteration. slice[0] = %d\n", id, slice[0]);
                 return_val = 1;
                 break;
@@ -125,18 +132,18 @@ void distributor(chanend c_in, chanend c_out, chanend fromAcc)
   printf( "\nOne processing round completed...\n" );
 
   printf("Creating processes\n");
-  unsigned pos[4] = {0, 4, 8, 12};
+//  unsigned pos[4] = {0, 4, 8, 12};+
   interface farmer b[4];
   streaming chan c[4];
 //  par (int i=0; i<2; i++) {
 //      rowProcessor(i, b[i], c[i], c[(i+1)%2]);
 //  }
-  par {
+  par { //How can I make a replicating par statement which also includes the rowFarmer?
       rowProcessor(0, 4, 16, b[0], c[0], c[1]);
       rowProcessor(1, 4, 16, b[1], c[1], c[2]);
       rowProcessor(2, 4, 16, b[2], c[2], c[3]);
       rowProcessor(3, 4, 16, b[3], c[3], c[0]);
-      rowFarmer(b, 4, grid, pos, 16);
+      rowFarmer(b, 4, grid, 16);
   }
 }
 
