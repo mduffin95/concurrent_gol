@@ -65,31 +65,31 @@ interface farmer {
     int doneIteration(unsigned id, uchar slice[n], unsigned n ); //Returns 1 when we want to continue.
 };
 
-void rowProcessor(unsigned id, client interface farmer i, streaming chanend ghost_top, streaming chanend ghost_bot) {
-    uchar ghost_top_arr[IMWD], ghost_bot_arr[IMWD], slice[8*IMWD];
-    i.getSlice(id, slice, 8*IMWD);
+void rowProcessor(unsigned id, static const unsigned rows, static const unsigned cols, client interface farmer i, streaming chanend ghost_top, streaming chanend ghost_bot) {
+    uchar ghost_top_arr[cols], ghost_bot_arr[cols], slice[512];
+    i.getSlice(id, slice, rows*cols);
     while(1) {
         for(int i=0; i<IMWD; i++) {
             ghost_top <: slice[i];
-            ghost_bot <: slice[7*IMWD+i];
+            ghost_bot <: slice[(rows-1)*cols+i];
             ghost_top :> ghost_top_arr[i];
             ghost_bot :> ghost_bot_arr[i];
         }
-        i.doneIteration(id, slice, 8*IMWD);
+        i.doneIteration(id, slice, rows*cols);
     }
 
     printf("%d, is done\n", id);
 }
 
-void rowFarmer(server interface farmer c[n], unsigned n, uchar grid[p], unsigned p) {
+void rowFarmer(server interface farmer c[n], unsigned n, uchar grid[], unsigned pos[n], unsigned size) {
     while(1) {
         select {
             case c[int i].getSlice(unsigned id, uchar slice[n], unsigned n):
                 printf("Process %u is retrieving data\n", id);
-                //memcpy(slice, grid, IMWD*IMHT*sizeof(uchar));
+                memcpy(slice, grid+pos[id]*size, n*sizeof(uchar));
                 break;
             case c[int i].doneIteration(unsigned id, uchar slice[n], unsigned n) -> int return_val:
-                printf("Process %u has finished an iteration\n", id);
+                printf("Process %u has finished an iteration. slice[0] = %d\n", id, slice[0]);
                 return_val = 1;
                 break;
         }
@@ -125,15 +125,18 @@ void distributor(chanend c_in, chanend c_out, chanend fromAcc)
   printf( "\nOne processing round completed...\n" );
 
   printf("Creating processes\n");
-  interface farmer b[2];
-  streaming chan c[2];
+  unsigned pos[4] = {0, 4, 8, 12};
+  interface farmer b[4];
+  streaming chan c[4];
 //  par (int i=0; i<2; i++) {
 //      rowProcessor(i, b[i], c[i], c[(i+1)%2]);
 //  }
   par {
-      rowProcessor(0, b[0], c[0], c[1]);
-      rowProcessor(1, b[1], c[1], c[0]);
-      rowFarmer(b, 2, grid, IMWD*IMHT);
+      rowProcessor(0, 4, 16, b[0], c[0], c[1]);
+      rowProcessor(1, 4, 16, b[1], c[1], c[2]);
+      rowProcessor(2, 4, 16, b[2], c[2], c[3]);
+      rowProcessor(3, 4, 16, b[3], c[3], c[0]);
+      rowFarmer(b, 4, grid, pos, 16);
   }
 }
 
