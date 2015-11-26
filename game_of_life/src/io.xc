@@ -2,7 +2,7 @@
  * acc.xc
  *
  *  Created on: 26 Nov 2015
- *      Author: matth
+ *      Author: Matt Duffin
  */
 
 #include "io.h"

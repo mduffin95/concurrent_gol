@@ -2,7 +2,7 @@
  * constants.h
  *
  *  Created on: 26 Nov 2015
- *      Author: matth
+ *      Author: Matt Duffin
  */
 
 
@@ -12,7 +12,7 @@
 #define  IMHT 16                  //image height
 #define  IMWD 16                  //image width
 #define  SLSZ 512                 //slice array length
-#define  WORKERS 12                //number of workers
+#define  WORKERS 10                //number of workers
 
 typedef unsigned char uchar;      //using uchar as shorthand
 
