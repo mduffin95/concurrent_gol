@@ -12,7 +12,6 @@ void readGrid(uchar grid[], chanend c_in) {
     for( int y = 0; y < IMHT; y++ ) {   //go through all lines
         for( int x = 0; x < IMWD; x++ ) { //go through each pixel per line
             c_in :> grid[y*IMWD+x]; //read the pixel value
-            //c_out <: (uchar)( grid[y*IMWD+x] ^ 0xFF ); //send some modified pixel out
         }
     }
 }

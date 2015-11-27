@@ -10,7 +10,7 @@
 #define TASKS_H_
 
 #include "types.h"
-#include <gpio.h>
+#include "io.h"
 
 typedef interface farmer_if {
     unsigned getSlice(unsigned id, uchar slice[]); //Why can we not specify first dimension?
@@ -25,9 +25,7 @@ typedef interface farmer_if {
 
 void sliceWorker(unsigned id, static const unsigned cols, client farmer_if i, streaming chanend top_c, streaming chanend bot_c);
 
-void distributor(server farmer_if c[n], unsigned n, chanend c_in, chanend c_out, client input_gpio_if button_1, client input_gpio_if button_2,
-        client output_gpio_if led_green, client output_gpio_if rgb_led_blue,
-        client output_gpio_if rgb_led_green, client output_gpio_if rgb_led_red);
+void distributor(server farmer_if c[n], unsigned n, client but_led_if gpio, chanend c_in, chanend c_out, chanend acc);
 
 
 #endif /* TASKS_H_ */
