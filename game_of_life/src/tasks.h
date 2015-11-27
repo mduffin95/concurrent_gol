@@ -16,10 +16,13 @@ typedef interface farmer_if {
     unsigned getSlice(unsigned id, uchar slice[]); //Why can we not specify first dimension?
 
     [[clears_notification]]
-    void report(unsigned id, uchar slice[]);
+    void report(unsigned id, unsigned round, uchar slice[]);
+
+    [[clears_notification]]
+    void restart(void);
 
     [[notification]]
-    slave void pause(void);
+    slave void playPause(void);
 
 } farmer_if;
 

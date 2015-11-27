@@ -2,7 +2,7 @@
 // (using the XMOS i2c accelerometer demo)
 
 #include <platform.h>
-#include "i2c.h"
+#include <i2c.h>
 #include <stdio.h>
 #include <gpio.h>
 
