@@ -9,8 +9,8 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-#include "constants.h"
+#include "types.h"
 
-void readGrid(uchar grid[], chanend c_in, chanend c_out, chanend fromAcc);
+void readGrid(uchar grid[], chanend c_in);
 
 #endif /* UTILS_H_ */

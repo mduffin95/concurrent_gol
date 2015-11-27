@@ -2,41 +2,50 @@
 // (using the XMOS i2c accelerometer demo)
 
 #include <platform.h>
-#include <xs1.h>
+#include <i2c.h>
 #include <stdio.h>
+#include <gpio.h>
 
 /*---My Includes---*/
 #include "io.h"
 #include "tasks.h"
 #include "constants.h"
 
-on tile[0]: port p_scl = XS1_PORT_1E;         //interface ports to accelerometer
-on tile[0]: port p_sda = XS1_PORT_1F;
+on tile[0] : port p_scl = XS1_PORT_1E;         //interface ports to accelerometer
+on tile[0] : port p_sda = XS1_PORT_1F;
+on tile[0] : in port explorer_buttons = XS1_PORT_4E; //port to access xCore-200 buttons
+on tile[0] : out port explorer_leds = XS1_PORT_4F;   //port to access xCore-200 LEDs
 
 int main(void) {
 
-  i2c_master_if i2c[1];               //interface to accelerometer
+    i2c_master_if i2c[1];               //interface to accelerometer
 
-  //char infname[] = "test.pgm";     //put your input image path here
-  //char outfname[] = "testout.pgm"; //put your output image path here
-  chan c_inIO, c_outIO, c_control;    //extend your channel definitions here
+    //char infname[] = "test.pgm";     //put your input image path here
+    //char outfname[] = "testout.pgm"; //put your output image path here
+    chan c_inIO, c_outIO;    //extend your channel definitions here
 
-  interface farmer b[WORKERS];
-  streaming chan c[WORKERS];
+    farmer_if b[WORKERS];
+    streaming chan c[WORKERS];
 
-  par {
-    on tile[0]: i2c_master(i2c, 1, p_scl, p_sda, 10);   //server thread providing accelerometer data
-    on tile[0]: accelerometer(i2c[0],c_control);        //client thread reading accelerometer data
-    on tile[0]: DataInStream("test.pgm", c_inIO);          //thread to read in a PGM image
-    on tile[0]: DataOutStream("testout.pgm", c_outIO);       //thread to write out a PGM image
-    on tile[1]: distributor(b, WORKERS, c_inIO, c_outIO, c_control);//thread to coordinate work on image
-    on tile[0]: par (int i=0; i<WORKERS/2; i++) {
-        sliceWorker(i, IMWD, b[i], c[i], c[(i+1)%WORKERS]);
+    input_gpio_if i_explorer_buttons[2];
+    output_gpio_if i_explorer_leds[4];
+
+    par {
+        on tile[0] : input_gpio_with_events(i_explorer_buttons, 2, explorer_buttons, null);
+        on tile[0] : output_gpio(i_explorer_leds, 4, explorer_leds, null);
+        //on tile[0] : i2c_master(i2c, 1, p_scl, p_sda, 10);   //server thread providing accelerometer data
+        //on tile[0] : accelerometer(i2c[0],c_control);        //client thread reading accelerometer data.
+        on tile[0] : DataInStream("test.pgm", c_inIO);          //thread to read in a PGM image
+        on tile[0] : DataOutStream("testout.pgm", c_outIO);       //thread to write out a PGM image
+        on tile[0] : distributor(b, WORKERS, c_inIO, c_outIO, i_explorer_buttons[0], i_explorer_buttons[1],
+                i_explorer_leds[0], i_explorer_leds[1],
+                i_explorer_leds[2], i_explorer_leds[3]);//thread to coordinate work on image
+        on tile[0] : par (int i=0; i<WORKERS/2 - 2; i++) {
+            sliceWorker(i, IMWD, b[i], c[i], c[(i+1)%WORKERS]);
+        }
+        on tile[1]: par (int i=WORKERS/2 - 2; i<WORKERS; i++) {
+            sliceWorker(i, IMWD, b[i], c[i], c[(i+1)%WORKERS]);
+        }
     }
-    on tile[1]: par (int i=WORKERS/2; i<WORKERS; i++) {
-        sliceWorker(i, IMWD, b[i], c[i], c[(i+1)%WORKERS]);
-    }
-  }
-
-  return 0;
+    return 0;
 }
