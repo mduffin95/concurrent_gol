@@ -27,6 +27,14 @@ typedef interface but_led_if {
     slave void event(void);
 } but_led_if;
 
+typedef interface data_if {
+    [[clears_notification]]
+    void transferData(uchar data[], unsigned &len); //Takes a reference so we can give a length if writing data.
+
+    [[notification]]
+    slave void requestTransfer(void);
+} data_if;
+
 void gpioHandler(server but_led_if dist, client input_gpio_if button_0, client input_gpio_if button_1,
         client output_gpio_if led_green, client output_gpio_if rgb_led_blue,
         client output_gpio_if rgb_led_green, client output_gpio_if rgb_led_red);

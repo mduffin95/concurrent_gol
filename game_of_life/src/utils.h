@@ -12,5 +12,6 @@
 #include "types.h"
 
 void readGrid(uchar grid[], chanend c_in);
+void writeGrid(uchar grid[], chanend c_out);
 
 #endif /* UTILS_H_ */

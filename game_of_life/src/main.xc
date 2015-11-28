@@ -26,6 +26,7 @@ int main(void) {
 
     farmer_if b[WORKERS];
     streaming chan c[WORKERS];
+    data_if d[WORKERS];
 
     input_gpio_if i_explorer_buttons[2];
     output_gpio_if i_explorer_leds[4];
@@ -41,12 +42,12 @@ int main(void) {
         on tile[0] : gpioHandler(gpio, i_explorer_buttons[0], i_explorer_buttons[1],
                 i_explorer_leds[0], i_explorer_leds[1],
                 i_explorer_leds[2], i_explorer_leds[3]);
-        on tile[0] : distributor(b, WORKERS, gpio, c_inIO, c_outIO, c_acc_dist);//thread to coordinate work on image
+        on tile[0] : distributor(b, d, WORKERS, gpio, c_inIO, c_outIO, c_acc_dist);//thread to coordinate work on image
         on tile[0] : par (int i=0; i<WORKERS/2 - 2; i++) {
-            sliceWorker(i, IMWD, b[i], c[i], c[(i+1)%WORKERS]);
+            sliceWorker(IMWD, b[i], d[i], c[i], c[(i+1)%WORKERS]);
         }
         on tile[1]: par (int i=WORKERS/2 - 2; i<WORKERS; i++) {
-            sliceWorker(i, IMWD, b[i], c[i], c[(i+1)%WORKERS]);
+            sliceWorker(IMWD, b[i], d[i], c[i], c[(i+1)%WORKERS]);
         }
     }
     return 0;

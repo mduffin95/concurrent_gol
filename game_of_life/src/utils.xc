@@ -15,3 +15,12 @@ void readGrid(uchar grid[], chanend c_in) {
         }
     }
 }
+
+
+void writeGrid(uchar grid[], chanend c_out) {
+    for( int y = 0; y < IMHT; y++ ) {   //go through all lines
+        for( int x = 0; x < IMWD; x++ ) { //go through each pixel per line
+            c_out <: grid[y*IMWD+x]; //read the pixel value
+        }
+    }
+}
