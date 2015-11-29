@@ -9,9 +9,12 @@
 #include <stdio.h>
 
 void readGrid(uchar grid[], chanend c_in) {
+    uchar cell;
     for( int y = 0; y < IMHT; y++ ) {   //go through all lines
         for( int x = 0; x < IMWD; x++ ) { //go through each pixel per line
-            c_in :> grid[y*IMWD+x]; //read the pixel value
+            c_in :> cell; //read the pixel value
+            if(cell) grid[y*IMWD+x] = 1;
+            else grid[y*IMWD+x] = 0;
         }
     }
 }
@@ -20,7 +23,8 @@ void readGrid(uchar grid[], chanend c_in) {
 void writeGrid(uchar grid[], chanend c_out) {
     for( int y = 0; y < IMHT; y++ ) {   //go through all lines
         for( int x = 0; x < IMWD; x++ ) { //go through each pixel per line
-            c_out <: grid[y*IMWD+x]; //read the pixel value
+            if(grid[y*IMWD+x]) c_out <: 255;
+            else c_out <: 0;
         }
     }
 }

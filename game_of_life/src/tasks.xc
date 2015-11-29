@@ -14,37 +14,82 @@
 #include <string.h> //for memcpy
 #include <xs1.h>
 
+uchar calcGol(uchar *cell, unsigned size, unsigned row, unsigned col) {
+    int left = (size+col-1)%size - col; //value to add to go left
+    int right = (col+1)%size - col;
+    uchar box[9] = {*(cell+left-size), *(cell-size), *(cell+right-size), *(cell+left), *cell, *(cell+right), *(cell+left+size), *(cell+size), *(cell+right+size)};
+    uchar neighbours = *(cell+left-size) + *(cell-size) + *(cell+right-size) + *(cell+left) + *(cell+right) + *(cell+left+size) + *(cell+size) + *(cell+right+size);
+//    printf("after neighbours\n");
+    uchar live = *cell;
+//    printf("inside calcgol\n");
+    if (live) {
+        printf("Cell (%u, %u) has %u neighbours. [%u, %u, %u, %u, %u, %u, %u, %u, %u]\n", row, col, neighbours, box[0], box[1], box[2], box[3], box[4], box[5], box[6], box[7], box[8]);
+        if (neighbours < 2 || neighbours > 3) {
+            return 0; //Dies
+        }
+        printf("Cell (%u, %u) lives  with %u neighbours.\n", row, col, neighbours);
+        return 1; //Lives on, becuase there are 2 or 3 neighbours
+    }
+    else {
+        if (neighbours == 3) {
+            return 1; //Becomes live
+        }
+        return 0; //Stays dead
+    }
+}
+
 void sliceWorker(static const unsigned cols, client farmer_if dist_control, client data_if dist_data, streaming chanend top_c, streaming chanend bot_c) {
-    uchar data[SLSZ];
-    uchar *slice = data+cols;
+    uchar d1[SLSZ], d2[SLSZ];
+    uchar *data_curr = d1;
+    uchar *data_next = d2;
+    uchar *slice = data_curr+cols;
     unsigned rows = dist_control.getSlice(slice);
     unsigned round = 0;
     uchar paused = 0;
-    uchar *top_arr = data;
-    uchar *bot_arr = data+(rows+1)*cols; //Aliasing pointers
+    uchar single = 0;
+    uchar *top_arr = data_curr;
+    uchar *bot_arr = data_curr+(rows+1)*cols; //Aliasing pointers
+    unsigned live = 0;
     while(1) {
         select {
         case dist_control.playPause():
             if (paused) {
                 dist_control.restart();
             } else {
-                dist_control.report(round, 5); // 5 is a dummy value
+                dist_control.report(round, live);
             }
             paused = ~paused;
+            single = 0;
             break;
         case dist_data.requestTransfer():
             unsigned len = rows*cols;
             dist_data.transferData(slice, len);
             break;
         default:
-            if (!paused) {
+            if (!paused && !single) {
                 for(int i=0; i<IMWD; i++) {
                     top_c <: slice[i];
                     bot_c <: slice[(rows-1)*cols+i];
                     top_c :> top_arr[i];
                     bot_c :> bot_arr[i];
                 }
+                live = 0;
+                for (int y=0; y<rows; y++) {
+                    for (int x=0; x<cols; x++) {
+                        data_next[cols+y*cols+x] = calcGol(slice+y*cols+x, cols, y, x);
+                        if(data_next[cols+y*cols+x]) {
+                            live++;
+                        }
+                    }
+                }
+                uchar *tmp = data_curr;
+                data_curr = data_next;
+                data_next = tmp;
+                slice = data_curr+cols;
+                top_arr = data_curr;
+                bot_arr = data_curr+(rows+1)*cols;
                 round++;
+                single = 1;
             }
             break;
         }
