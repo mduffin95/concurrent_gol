@@ -96,7 +96,7 @@ void sliceWorker(static const unsigned cols, client farmer_if dist_control, clie
     }
 }
 
-void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client but_led_if gpio, chanend c_in, chanend c_out, chanend acc) {
+void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client but_led_if gpio, chanend c_in, client data_if writer, chanend acc) {
     uchar grid [IMHT*IMWD];
     readGrid(grid, c_in);
 
@@ -119,7 +119,16 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             printf("Process %u is transferring. slice[0] = %u.\n", i, slice[0]);
             memcpy(grid+rows*i*size, slice, len*sizeof(uchar)); //Copy slice into grid.
             if (++upload_count == n) {
-                writeGrid(grid, c_out); // Send grid off to DataOutStream
+                for (int y = 0; y < IMHT; y++) {
+                    for (int x = 0; x < IMWD; x++) {
+                        printf("-%4.1d ", grid[y*IMWD+x]); //show image values
+                    }
+                    printf("\n");
+                }
+                printf("Calling writeGrid\n");
+                printf("sent\n");
+                unsigned len = IMHT*IMWD;
+                writer.transferData(grid, len);
                 upload_count = 0;
             }
             break;

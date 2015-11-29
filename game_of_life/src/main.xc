@@ -32,17 +32,19 @@ int main(void) {
     output_gpio_if i_explorer_leds[4];
     but_led_if gpio;
 
+    data_if writer;
+
     par {
         on tile[0] : input_gpio_with_events(i_explorer_buttons, 2, explorer_buttons, null);
         on tile[0] : output_gpio(i_explorer_leds, 4, explorer_leds, null);
         on tile[0] : i2c_master(i2c, 1, p_scl, p_sda, 10);   //server thread providing accelerometer data
         on tile[0] : accelerometer(i2c[0], c_acc_dist);        //client thread reading accelerometer data.
         on tile[0] : DataInStream("test.pgm", c_inIO);          //thread to read in a PGM image
-        on tile[0] : DataOutStream("testout.pgm", c_outIO);       //thread to write out a PGM image
+        on tile[0] : DataOutStream("testout.pgm", writer);       //thread to write out a PGM image
         on tile[0] : gpioHandler(gpio, i_explorer_buttons[0], i_explorer_buttons[1],
                 i_explorer_leds[0], i_explorer_leds[1],
                 i_explorer_leds[2], i_explorer_leds[3]);
-        on tile[0] : distributor(b, d, WORKERS, gpio, c_inIO, c_outIO, c_acc_dist);//thread to coordinate work on image
+        on tile[0] : distributor(b, d, WORKERS, gpio, c_inIO, writer, c_acc_dist);//thread to coordinate work on image
         on tile[0] : par (int i=0; i<WORKERS/2 - 2; i++) {
             sliceWorker(IMWD, b[i], d[i], c[i], c[(i+1)%WORKERS]);
         }

@@ -43,6 +43,6 @@ void accelerometer(client interface i2c_master_if i2c, chanend toDist);
 
 void DataInStream(char infname[], chanend c_out);
 
-void DataOutStream(char outfname[], chanend c_in);
+void DataOutStream(char outfname[], server data_if dist);
 
 #endif /* IO_H_ */

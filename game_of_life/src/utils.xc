@@ -21,9 +21,12 @@ void readGrid(uchar grid[], chanend c_in) {
 
 
 void writeGrid(uchar grid[], chanend c_out) {
+    uchar cell;
     for( int y = 0; y < IMHT; y++ ) {   //go through all lines
         for( int x = 0; x < IMWD; x++ ) { //go through each pixel per line
-            if(grid[y*IMWD+x]) c_out <: 255;
+            cell = grid[y*IMWD+x];
+            printf("Writing row: %d, col: %d = %u\n", y, x, cell);
+            if(cell) c_out <: 255;
             else c_out <: 0;
         }
     }

@@ -150,9 +150,9 @@ void DataInStream(char infname[], chanend c_out) {
         for (int x = 0; x < IMWD; x++) {
             c_out <: line[ x ];
             printf("-%4.1d ", line[x]); //show image values
+        }
+        printf("\n");
     }
-    printf("\n");
-}
 
  //Close PGM image file
 _closeinpgm();
@@ -160,28 +160,33 @@ printf("DataInStream:Done...\n");
 return;
 }
 
-void DataOutStream(char outfname[], chanend c_in) {
+void DataOutStream(char outfname[], server data_if dist) { //convert to use interface.
     int res;
-    uchar line[IMWD];
+    uchar line[SLSZ];
 
      //Open PGM file
     printf("DataOutStream:Start...\n");
     res = _openoutpgm(outfname, IMWD, IMHT);
+    printf("DataOutStream opened file\n");
     if (res) {
         printf("DataOutStream:Error opening %s\n.", outfname);
         return;
     }
 
-     //Compile each line of the image and write the image line-by-line
-    for (int y = 0; y < IMHT; y++) {
-        for (int x = 0; x < IMWD; x++) {
-            c_in :> line[ x ];
+    while(1) {
+        select {
+            case dist.transferData(uchar data[], unsigned &len):
+                for(int y=0; y<len; y++) {
+                    for(int j=0; j<len; j++) {
+                        line[j] = (data[y*len+j]) ? 255 : 0;
+                    }
+                    _writeoutline(line, len);
+                }
+                _closeoutpgm();
+                printf("DataOutStream:Done...\n");
+                break;
         }
-        _writeoutline(line, IMWD);
     }
 
-     //Close the PGM image
-    _closeoutpgm();
-    printf("DataOutStream:Done...\n");
     return;
 }
