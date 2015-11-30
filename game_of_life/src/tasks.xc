@@ -6,37 +6,13 @@
  */
 
 #include "tasks.h"
-#include "utils.h"
 #include "types.h"
 #include "constants.h"
 #include "io.h"
+#include "gollogic.h"
 #include <stdio.h>
 #include <string.h> //for memcpy
 #include <xs1.h>
-
-uchar calcGol(uchar *cell, unsigned size, unsigned row, unsigned col) {
-    int left = (size+col-1)%size - col; //value to add to go left
-    int right = (col+1)%size - col;
-    uchar box[9] = {*(cell+left-size), *(cell-size), *(cell+right-size), *(cell+left), *cell, *(cell+right), *(cell+left+size), *(cell+size), *(cell+right+size)};
-    uchar neighbours = *(cell+left-size) + *(cell-size) + *(cell+right-size) + *(cell+left) + *(cell+right) + *(cell+left+size) + *(cell+size) + *(cell+right+size);
-//    printf("after neighbours\n");
-    uchar live = *cell;
-//    printf("inside calcgol\n");
-    if (live) {
-        printf("Cell (%u, %u) has %u neighbours. [%u, %u, %u, %u, %u, %u, %u, %u, %u]\n", row, col, neighbours, box[0], box[1], box[2], box[3], box[4], box[5], box[6], box[7], box[8]);
-        if (neighbours < 2 || neighbours > 3) {
-            return 0; //Dies
-        }
-        printf("Cell (%u, %u) lives  with %u neighbours.\n", row, col, neighbours);
-        return 1; //Lives on, becuase there are 2 or 3 neighbours
-    }
-    else {
-        if (neighbours == 3) {
-            return 1; //Becomes live
-        }
-        return 0; //Stays dead
-    }
-}
 
 void sliceWorker(static const unsigned cols, client farmer_if dist_control, client data_if dist_data, streaming chanend top_c, streaming chanend bot_c) {
     uchar d1[SLSZ], d2[SLSZ];
@@ -62,12 +38,13 @@ void sliceWorker(static const unsigned cols, client farmer_if dist_control, clie
             single = 0;
             break;
         case dist_data.requestTransfer():
-            unsigned len = rows*cols;
-            dist_data.transferData(slice, len);
+            unsigned r = rows;
+            unsigned c = cols;
+            dist_data.transferData(slice, r, c);
             break;
         default:
             if (!paused && !single) {
-                for(int i=0; i<IMWD; i++) {
+                for(int i=0; i<cols; i++) {
                     top_c <: slice[i];
                     bot_c <: slice[(rows-1)*cols+i];
                     top_c :> top_arr[i];
@@ -96,39 +73,41 @@ void sliceWorker(static const unsigned cols, client farmer_if dist_control, clie
     }
 }
 
-void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client but_led_if gpio, chanend c_in, client data_if writer, chanend acc) {
-    uchar grid [IMHT*IMWD];
-    readGrid(grid, c_in);
+void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client but_led_if gpio, client data_if reader, client data_if writer, chanend acc) {
+    uchar grid [GRIDSZ];
+    unsigned rows_g, cols_g; // "global" rows and columns values
+//    readGrid(grid, c_in);
+    reader.transferData(grid, rows_g, cols_g); //This fills in height and width
+    printf("Rows: %u, Cols: %u\n", rows_g, cols_g);
 
     int upload_count = 0; // How many workers have given slice back to grid.
 
-    int size = IMWD;
-    int remainder = size % n;
-    int rows = (size - remainder) / n;
+
+    int remainder = rows_g % n;
+    int rows_per_worker = (rows_g - remainder) / n;
     while(1) {
         select {
         case c[int i].getSlice(uchar slice[]) -> unsigned rows_return:
             printf("Process %u is retrieving data.\n", i);
-            rows_return = (i==n-1) ? rows+remainder : rows;
-            memcpy(slice, grid+rows*i*size, rows_return*size*sizeof(uchar));
+            rows_return = (i==n-1) ? rows_per_worker+remainder : rows_per_worker;
+            memcpy(slice, grid+rows_per_worker*i*cols_g, rows_return*cols_g*sizeof(uchar));
             break;
         case c[int i].report(unsigned round, unsigned live):
             printf("Process %u is reporting. Round = %u. Live = %u\n", i, round, live);
             break;
-        case d[int i].transferData(uchar slice[], unsigned &len):
-            printf("Process %u is transferring. slice[0] = %u.\n", i, slice[0]);
-            memcpy(grid+rows*i*size, slice, len*sizeof(uchar)); //Copy slice into grid.
+        case d[int i].transferData(uchar slice[], unsigned &r, unsigned &c):
+            printf("Process %u is transferring.\n", i, slice[0]);
+            memcpy(grid+rows_per_worker*i*cols_g, slice, r*c*sizeof(uchar)); //Copy slice into grid.
             if (++upload_count == n) {
-                for (int y = 0; y < IMHT; y++) {
-                    for (int x = 0; x < IMWD; x++) {
-                        printf("-%4.1d ", grid[y*IMWD+x]); //show image values
+                for (int y = 0; y < rows_g; y++) {
+                    for (int x = 0; x < cols_g; x++) {
+                        printf("-%4.1d ", grid[y*cols_g+x]); //show image values
                     }
                     printf("\n");
                 }
-                printf("Calling writeGrid\n");
-                printf("sent\n");
-                unsigned len = IMHT*IMWD;
-                writer.transferData(grid, len);
+                unsigned rows_tmp = rows_g;
+                unsigned cols_tmp = cols_g; //For security, as I am passing references.
+                writer.transferData(grid, rows_tmp, cols_tmp);
                 upload_count = 0;
             }
             break;

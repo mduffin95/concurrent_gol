@@ -5,10 +5,10 @@ FILE *_OUTFP = NULL;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //Line-wise pgm in:
-int _openinpgm(char fname[], int width, int height)
+int _openinpgm(char fname[], unsigned wh[])
 {
 	char str[ 64 ];
-    int inwidth, inheight;
+    unsigned inwidth, inheight;
 
 	_INFP = fopen( fname, "rb" );
 	if( _INFP == NULL )
@@ -19,12 +19,14 @@ int _openinpgm(char fname[], int width, int height)
 	//Strip off header
     fgets( str, 64, _INFP ); //Version: P5
     fgets( str, 64, _INFP ); //width and height
-    sscanf( str, "%d%d", &inwidth, &inheight );
-    if( inwidth != width || inheight != height )
-    {
-    	printf( "Input image size(%dx%d) does not = %dx%d or trouble reading header\n", inwidth, inheight, width, height );
-    	return -1;
-    }
+    sscanf( str, "%u%u", &inwidth, &inheight );
+//    if( inwidth != width || inheight != height )
+//    {
+//    	printf( "Input image size(%dx%d) does not = %dx%d or trouble reading header\n", inwidth, inheight, width, height );
+//    	return -1;
+//    }
+    wh[1] = inwidth;
+    wh[0] = inheight;
     fgets( str, 64, _INFP ); //bit depth, must be 255
 	return 0;
 }
@@ -95,7 +97,7 @@ int _writeoutline(unsigned char line[], int width)
 
 	if( nb != width )
 	{
-		//printf( "Error writing line, nb = %d\n", nb );
+		printf( "Error writing line, nb = %d\n", nb );
 		//Error or end of file
 		return -1;
 	}

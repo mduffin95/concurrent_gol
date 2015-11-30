@@ -12,6 +12,7 @@
 #define  IMHT 16                  //image height
 #define  IMWD 16                  //image width
 #define  SLSZ 512                 //slice array length
+#define  GRIDSZ 4096              //grid array size
 #define  WORKERS 4                //number of workers
 
 #define FXOS8700EQ_I2C_ADDR 0x1E  //register addresses for accelerometer

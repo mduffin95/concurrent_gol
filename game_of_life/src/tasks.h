@@ -34,6 +34,6 @@ typedef interface farmer_if {
 
 void sliceWorker(static const unsigned cols, client farmer_if dist_control, client data_if dist_data, streaming chanend top_c, streaming chanend bot_c);
 
-void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client but_led_if gpio, chanend c_in, client data_if writer, chanend acc);
+void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client but_led_if gpio, client data_if reader, client data_if writer, chanend acc);
 
 #endif /* TASKS_H_ */

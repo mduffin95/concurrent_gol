@@ -29,7 +29,7 @@ typedef interface but_led_if {
 
 typedef interface data_if {
     [[clears_notification]]
-    void transferData(uchar data[], unsigned &len); //Takes a reference so we can give a length if writing data.
+    void transferData(uchar data[], unsigned &rows, unsigned &cols); //Takes a reference so we can give a length if writing data.
 
     [[notification]]
     slave void requestTransfer(void);
@@ -41,8 +41,10 @@ void gpioHandler(server but_led_if dist, client input_gpio_if button_0, client i
 
 void accelerometer(client interface i2c_master_if i2c, chanend toDist);
 
-void DataInStream(char infname[], chanend c_out);
+[[combinable]]
+void DataInStream(char infname[], server data_if dist);
 
+[[combinable]]
 void DataOutStream(char outfname[], server data_if dist);
 
 #endif /* IO_H_ */

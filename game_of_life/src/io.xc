@@ -132,61 +132,65 @@ void accelerometer(client interface i2c_master_if i2c, chanend dist) {
     }
 }
 
-void DataInStream(char infname[], chanend c_out) {
+[[combinable]]
+void DataInStream(char infname[], server data_if dist) {
     int res;
-    uchar line[IMWD];
+    uchar line[SLSZ];
     printf("DataInStream: Start...\n");
 
     //Open PGM file
-    res = _openinpgm(infname, IMWD, IMHT);
+    unsigned rc[2]; //Only way I could work out how to get data back.
+    res = _openinpgm(infname, rc);
     if (res) {
         printf("DataInStream: Error openening %s\n.", infname);
         return;
     }
-
-    //Read image line-by-line and send byte by byte to channel c_out
-    for (int y = 0; y < IMHT; y++) {
-        _readinline(line, IMWD);
-        for (int x = 0; x < IMWD; x++) {
-            c_out <: line[ x ];
-            printf("-%4.1d ", line[x]); //show image values
+    while(1) {
+        select {
+            case dist.transferData(uchar data[], unsigned &r, unsigned &c):
+                r = rc[0];
+                c = rc[1]; //Sends data through because of references.
+                for(int y=0; y<r; y++) {
+                    _readinline(line, c);
+                    for(int x=0; x<c; x++) {
+                        data[y*c+x] = (line[x]) ? 1 : 0;
+                    }
+                }
+                _closeinpgm();
+                printf("DataInStream:Done...\n");
+                break;
         }
-        printf("\n");
     }
-
- //Close PGM image file
-_closeinpgm();
-printf("DataInStream:Done...\n");
-return;
 }
 
+[[combinable]]
 void DataOutStream(char outfname[], server data_if dist) { //convert to use interface.
     int res;
     uchar line[SLSZ];
 
-     //Open PGM file
-    printf("DataOutStream:Start...\n");
-    res = _openoutpgm(outfname, IMWD, IMHT);
-    printf("DataOutStream opened file\n");
-    if (res) {
-        printf("DataOutStream:Error opening %s\n.", outfname);
-        return;
-    }
-
     while(1) {
         select {
-            case dist.transferData(uchar data[], unsigned &len):
-                for(int y=0; y<len; y++) {
-                    for(int j=0; j<len; j++) {
-                        line[j] = (data[y*len+j]) ? 255 : 0;
+            case dist.transferData(uchar data[], unsigned &rows, unsigned &cols):
+                //Open PGM file
+                printf("DataOutStream:Start...\n");
+                res = _openoutpgm(outfname, cols, rows);
+                printf("DataOutStream opened file\n");
+                if (res) {
+                    printf("DataOutStream:Error opening %s\n.", outfname);
+                    return;
+                }
+
+                for(int y=0; y<rows; y++) {
+                    for(int x=0; x<cols; x++) {
+                        line[x] = (data[y*cols+x]) ? 255 : 0;
+                        printf("%d", line[x]);
                     }
-                    _writeoutline(line, len);
+                    _writeoutline(line, cols);
+                    printf("_writeoutline\n");
                 }
                 _closeoutpgm();
                 printf("DataOutStream:Done...\n");
                 break;
         }
     }
-
-    return;
 }
