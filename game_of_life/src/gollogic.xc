@@ -4,7 +4,9 @@
  *  Created on: 30 Nov 2015
  *      Author: matth
  */
-
+#include "gollogic.h"
+#include "types.h"
+#include <stdio.h>
 
 uchar calcGol(uchar *cell, unsigned size, unsigned row, unsigned col) {
     int left = (size+col-1)%size - col; //value to add to go left

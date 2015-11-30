@@ -46,10 +46,10 @@ int main(void) {
                 i_explorer_leds[2], i_explorer_leds[3]);
         on tile[0] : distributor(b, d, WORKERS, gpio, reader, writer, c_acc_dist);//thread to coordinate work on image
         on tile[0] : par (int i=0; i<WORKERS/2 - 2; i++) {
-            sliceWorker(IMWD, b[i], d[i], c[i], c[(i+1)%WORKERS]);
+            sliceWorker(b[i], d[i], c[i], c[(i+1)%WORKERS]);
         }
         on tile[1]: par (int i=WORKERS/2 - 2; i<WORKERS; i++) {
-            sliceWorker(IMWD, b[i], d[i], c[i], c[(i+1)%WORKERS]);
+            sliceWorker(b[i], d[i], c[i], c[(i+1)%WORKERS]);
         }
     }
     return 0;

@@ -14,13 +14,14 @@
 #include <string.h> //for memcpy
 #include <xs1.h>
 
-void sliceWorker(static const unsigned cols, client farmer_if dist_control, client data_if dist_data, streaming chanend top_c, streaming chanend bot_c) {
+void sliceWorker(client farmer_if dist_control, client data_if dist_data, streaming chanend top_c, streaming chanend bot_c) {
     uchar d1[SLSZ], d2[SLSZ];
     uchar *data_curr = d1;
     uchar *data_next = d2;
-    uchar *slice = data_curr+cols;
-    unsigned rows = dist_control.getSlice(slice);
+    unsigned rows, cols;
+    {rows, cols} = dist_control.getSlice(data_curr);
     unsigned round = 0;
+    uchar *slice = data_curr+cols;
     uchar paused = 0;
     uchar single = 0;
     uchar *top_arr = data_curr;
@@ -80,6 +81,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
     reader.transferData(grid, rows_g, cols_g); //This fills in height and width
     printf("Rows: %u, Cols: %u\n", rows_g, cols_g);
 
+
     int upload_count = 0; // How many workers have given slice back to grid.
 
 
@@ -87,10 +89,11 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
     int rows_per_worker = (rows_g - remainder) / n;
     while(1) {
         select {
-        case c[int i].getSlice(uchar slice[]) -> unsigned rows_return:
+        case c[int i].getSlice(uchar inData[]) -> {unsigned rows_return, unsigned cols_return}:
             printf("Process %u is retrieving data.\n", i);
             rows_return = (i==n-1) ? rows_per_worker+remainder : rows_per_worker;
-            memcpy(slice, grid+rows_per_worker*i*cols_g, rows_return*cols_g*sizeof(uchar));
+            cols_return = cols_g;
+            memcpy(inData+cols_g, grid+rows_per_worker*i*cols_g, rows_return*cols_g*sizeof(uchar)); //inData+cols_g to give room for top row.
             break;
         case c[int i].report(unsigned round, unsigned live):
             printf("Process %u is reporting. Round = %u. Live = %u\n", i, round, live);
