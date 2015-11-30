@@ -20,31 +20,19 @@ void sliceWorker(client farmer_if dist_control, client data_if dist_data, stream
     uchar *data_next = d2;
     unsigned rows, cols;
     {rows, cols} = dist_control.getSlice(data_curr);
-    unsigned round = 0;
+    unsigned round = 1;
     uchar *slice = data_curr+cols;
     uchar paused = 0;
-    uchar single = 0;
     uchar *top_arr = data_curr;
     uchar *bot_arr = data_curr+(rows+1)*cols; //Aliasing pointers
     unsigned live = 0;
     while(1) {
         select {
-        case dist_control.playPause():
-            if (paused) {
-                dist_control.restart();
-            } else {
-                dist_control.report(round, live);
-            }
-            paused = ~paused;
-            single = 0;
-            break;
-        case dist_data.requestTransfer():
-            unsigned r = rows;
-            unsigned c = cols;
-            dist_data.transferData(slice, r, c);
+        case dist_control.resume():
+            paused = 0;
             break;
         default:
-            if (!paused && !single) {
+            if (!paused) {
                 for(int i=0; i<cols; i++) {
                     top_c <: slice[i];
                     bot_c <: slice[(rows-1)*cols+i];
@@ -66,8 +54,22 @@ void sliceWorker(client farmer_if dist_control, client data_if dist_data, stream
                 slice = data_curr+cols;
                 top_arr = data_curr;
                 bot_arr = data_curr+(rows+1)*cols;
+
+
+                switch (dist_control.report(round, live)) {
+                case PAUSE:
+                    paused = 1;
+                    break;
+                case UPLOAD:
+                    unsigned r = rows;
+                    unsigned c = cols;
+                    dist_data.transferData(slice, r, c);
+                    break;
+                default:
+                    break;
+                }
+
                 round++;
-                single = 1;
             }
             break;
         }
@@ -77,27 +79,55 @@ void sliceWorker(client farmer_if dist_control, client data_if dist_data, stream
 void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client but_led_if gpio, client data_if reader, client data_if writer, chanend acc) {
     uchar grid [GRIDSZ];
     unsigned rows_g, cols_g; // "global" rows and columns values
-//    readGrid(grid, c_in);
+    unsigned round_g = 1;
     reader.transferData(grid, rows_g, cols_g); //This fills in height and width
-    printf("Rows: %u, Cols: %u\n", rows_g, cols_g);
-
 
     int upload_count = 0; // How many workers have given slice back to grid.
+    unsigned pause_round = 0; //The round number on which to pause.
+    unsigned slices_round = 0; //The round number on which to retrieve slices.
 
 
     int remainder = rows_g % n;
     int rows_per_worker = (rows_g - remainder) / n;
     while(1) {
+        [[ordered]]
         select {
+        case gpio.event():
+            uchar button = gpio.getButton();
+            printf("Button %u was pressed.\n", button);
+            if(button == 1) {
+                slices_round = round_g + 1;
+            }
+            break;
+        case acc :> int tilted:
+            if (!tilted) {
+                for(int i=0; i<n; i++) {
+                    c[i].resume(); //Resume them all.
+                }
+                pause_round = 0;
+            } else { //Tilted
+                pause_round = round_g + 1;
+            }
+            break;
+        //Initially send each slice to each worker.
         case c[int i].getSlice(uchar inData[]) -> {unsigned rows_return, unsigned cols_return}:
             printf("Process %u is retrieving data.\n", i);
             rows_return = (i==n-1) ? rows_per_worker+remainder : rows_per_worker;
             cols_return = cols_g;
             memcpy(inData+cols_g, grid+rows_per_worker*i*cols_g, rows_return*cols_g*sizeof(uchar)); //inData+cols_g to give room for top row.
             break;
-        case c[int i].report(unsigned round, unsigned live):
-            printf("Process %u is reporting. Round = %u. Live = %u\n", i, round, live);
+        //Gather data from each worker. Send back code to tell them what to do.
+        case c[int i].report(unsigned round, unsigned live) -> int return_code:
+
+            if (round_g < round) round_g = round;
+            if (pause_round == round) {
+                return_code = PAUSE;
+                printf("Process %u is reporting. Round = %u. Live = %u\n", i, round, live);
+            }
+            else if (slices_round == round) return_code = UPLOAD;
+            else return_code = 0;
             break;
+        //Get slices from workers and copy back to main grid array.
         case d[int i].transferData(uchar slice[], unsigned &r, unsigned &c):
             printf("Process %u is transferring.\n", i, slice[0]);
             memcpy(grid+rows_per_worker*i*cols_g, slice, r*c*sizeof(uchar)); //Copy slice into grid.
@@ -113,22 +143,6 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
                 writer.transferData(grid, rows_tmp, cols_tmp);
                 upload_count = 0;
             }
-            break;
-        case c[int i].restart():
-            printf("Process is restarting.\n");
-            break;
-        case gpio.event():
-            uchar button = gpio.getButton();
-            printf("Button %u was pressed.\n", button);
-            if(button == 1) {
-                for(int j=0; j<n; j++)
-                    d[j].requestTransfer(); //Send notification to all workers.
-            }
-            break;
-        case acc :> int tilted:
-            printf("Tilted = %d\n", tilted);
-            for(int j=0; j<n; j++) //Toggle pause/play state after a tilt.
-                c[j].playPause();
             break;
         }
     }

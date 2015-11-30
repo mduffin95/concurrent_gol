@@ -133,7 +133,7 @@ void accelerometer(client interface i2c_master_if i2c, chanend dist) {
 }
 
 [[combinable]]
-void DataInStream(char infname[], server data_if dist) {
+void DataInStream(char infname[], server data_if dist) { //There would be no point making this distributable. May as well have a normal function.
     int res;
     uchar line[SLSZ];
     printf("DataInStream: Start...\n");
@@ -163,14 +163,15 @@ void DataInStream(char infname[], server data_if dist) {
     }
 }
 
-[[combinable]]
+[[distributable]]
 void DataOutStream(char outfname[], server data_if dist) { //convert to use interface.
-    int res;
-    uchar line[SLSZ];
+
 
     while(1) {
         select {
             case dist.transferData(uchar data[], unsigned &rows, unsigned &cols):
+        int res;
+            uchar line[SLSZ];
                 //Open PGM file
                 printf("DataOutStream:Start...\n");
                 res = _openoutpgm(outfname, cols, rows);
@@ -183,10 +184,8 @@ void DataOutStream(char outfname[], server data_if dist) { //convert to use inte
                 for(int y=0; y<rows; y++) {
                     for(int x=0; x<cols; x++) {
                         line[x] = (data[y*cols+x]) ? 255 : 0;
-                        printf("%d", line[x]);
                     }
                     _writeoutline(line, cols);
-                    printf("_writeoutline\n");
                 }
                 _closeoutpgm();
                 printf("DataOutStream:Done...\n");

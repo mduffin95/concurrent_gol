@@ -44,7 +44,7 @@ void accelerometer(client interface i2c_master_if i2c, chanend toDist);
 [[combinable]]
 void DataInStream(char infname[], server data_if dist);
 
-[[combinable]]
+[[distributable]]
 void DataOutStream(char outfname[], server data_if dist);
 
 #endif /* IO_H_ */
