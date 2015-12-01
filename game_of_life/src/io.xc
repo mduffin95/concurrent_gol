@@ -137,6 +137,7 @@ void DataInStream(char infname[], server data_if dist) { //There would be no poi
     int res;
     uchar line[SLSZ];
     printf("DataInStream: Start...\n");
+    dist.setGreen(1);
 
     //Open PGM file
     unsigned rc[2]; //Only way I could work out how to get data back.
@@ -158,6 +159,7 @@ void DataInStream(char infname[], server data_if dist) { //There would be no poi
                 }
                 _closeinpgm();
                 printf("DataInStream:Done...\n");
+                dist.setGreen(0);
                 break;
         }
     }
