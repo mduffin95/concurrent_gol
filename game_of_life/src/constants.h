@@ -9,11 +9,14 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
-#define  IMHT 16                  //image height
-#define  IMWD 16                  //image width
-#define  SLSZ 512                 //slice array length
-#define  GRIDSZ 4096              //grid array size
-#define  WORKERS 4                //number of workers
+//#define  IMHT 16                  //image height
+//#define  IMWD 16                  //image width
+#define  SLSZ 45000                 //slice array length
+#define  GRIDSZ 262144              //grid array size
+#define  WORKERS 6                //number of workers
+
+#define PAUSE 1
+#define UPLOAD 2
 
 #define FXOS8700EQ_I2C_ADDR 0x1E  //register addresses for accelerometer
 #define FXOS8700EQ_XYZ_DATA_CFG_REG 0x0E

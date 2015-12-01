@@ -17,11 +17,11 @@ uchar calcGol(uchar *cell, unsigned size, unsigned row, unsigned col) {
     uchar live = *cell;
 //    printf("inside calcgol\n");
     if (live) {
-        printf("Cell (%u, %u) has %u neighbours. [%u, %u, %u, %u, %u, %u, %u, %u, %u]\n", row, col, neighbours, box[0], box[1], box[2], box[3], box[4], box[5], box[6], box[7], box[8]);
+//        printf("Cell (%u, %u) has %u neighbours. [%u, %u, %u, %u, %u, %u, %u, %u, %u]\n", row, col, neighbours, box[0], box[1], box[2], box[3], box[4], box[5], box[6], box[7], box[8]);
         if (neighbours < 2 || neighbours > 3) {
             return 0; //Dies
         }
-        printf("Cell (%u, %u) lives  with %u neighbours.\n", row, col, neighbours);
+//        printf("Cell (%u, %u) lives  with %u neighbours.\n", row, col, neighbours);
         return 1; //Lives on, becuase there are 2 or 3 neighbours
     }
     else {

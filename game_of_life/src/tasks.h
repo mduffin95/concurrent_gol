@@ -16,19 +16,10 @@ typedef interface farmer_if {
     {unsigned, unsigned} getSlice(uchar slice[]); //This can go.
 
     [[clears_notification]]
-    void report(unsigned round, unsigned live);
-
-//    [[clears_notification]]
-//    void upload(unsigned id, uchar slice[]);
-
-    [[clears_notification]]
-    void restart(void);
+    int report(unsigned round, unsigned live); //return value determines whether worker should pause or not.
 
     [[notification]]
-    slave void playPause(void);
-
-//    [[notification]]
-//    slave void print(void);
+    slave void resume(void);
 
 } farmer_if;
 
