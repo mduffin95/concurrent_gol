@@ -7,6 +7,8 @@
 
 #include <gpio.h>
 #include <platform.h>
+#include "bitarray.h"
+#include <stdio.h>
 
 // GPIO port declarations
 on tile[0] : in port explorer_buttons = XS1_PORT_4E;
@@ -69,14 +71,25 @@ client output_gpio_if rgb_led_green, client output_gpio_if rgb_led_red) {
 }
 
 int main() {
+    int array[4] = {1,2,3,4};
+    printf("Size of int = %d\n", sizeof(int));
+    printf("%d\n", Get2DCell(array, 32, 2, 0));
+
+    for(int i=0; i<2; i++) {
+        for(int j=0; j<33; j++) {
+            printf("%d", Get2DCell(array, 33, i, j));
+        }
+        printf("\n");
+    }
+
     input_gpio_if i_explorer_buttons[2];
     output_gpio_if i_explorer_leds[4];
     par {
-        on tile[0] : input_gpio_with_events(i_explorer_buttons, 2, explorer_buttons, null);
-        on tile[0] : output_gpio(i_explorer_leds, 4, explorer_leds, null);
-        on tile[0] : gpio_handler(i_explorer_buttons[0], i_explorer_buttons[1],
-        i_explorer_leds[0], i_explorer_leds[1],
-        i_explorer_leds[2], i_explorer_leds[3]);
+//        on tile[0] : input_gpio_with_events(i_explorer_buttons, 2, explorer_buttons, null);
+//        on tile[0] : output_gpio(i_explorer_leds, 4, explorer_leds, null);
+//        on tile[0] : gpio_handler(i_explorer_buttons[0], i_explorer_buttons[1],
+//        i_explorer_leds[0], i_explorer_leds[1],
+//        i_explorer_leds[2], i_explorer_leds[3]);
     }
     return 0;
 }

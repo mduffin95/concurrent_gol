@@ -13,6 +13,7 @@
 #include "constants.h"
 #include "types.h"
 #include "pgmIO.h"
+#include "bitarray.h"
 
 void gpioHandler(server but_led_if dist, client input_gpio_if button_0, client input_gpio_if button_1,
         client output_gpio_if led_green, client output_gpio_if rgb_led_blue,
@@ -132,64 +133,52 @@ void accelerometer(client interface i2c_master_if i2c, chanend dist) {
     }
 }
 
-[[combinable]]
-void DataInStream(char infname[], server data_if dist) { //There would be no point making this distributable. May as well have a normal function.
+{unsigned, unsigned} DataIn(char infname[], int data[]) { //There would be no point making this distributable. May as well have a normal function.
     int res;
     uchar line[SLSZ];
     printf("DataInStream: Start...\n");
 
     //Open PGM file
-    unsigned rc[2]; //Only way I could work out how to get data back.
-    res = _openinpgm(infname, rc);
+    unsigned hw[2]; //Only way I could work out how to get data back.
+    res = _openinpgm(infname, hw);
     if (res) {
         printf("DataInStream: Error openening %s\n.", infname);
-        return;
+        return {0, 0};
     }
-    while(1) {
-        select {
-            case dist.transferData(uchar data[], unsigned &r, unsigned &c):
-                r = rc[0];
-                c = rc[1]; //Sends data through because of references.
-                for(int y=0; y<r; y++) {
-                    _readinline(line, c);
-                    for(int x=0; x<c; x++) {
-                        data[y*c+x] = (line[x]) ? 1 : 0;
-                    }
-                }
-                _closeinpgm();
-                printf("DataInStream:Done...\n");
-                break;
+    unsigned height = hw[0];
+    unsigned width = hw[1]; //Sends data through because of references.
+    for(int y=0; y<height; y++) {
+        _readinline(line, width);
+        for(int x=0; x<width; x++) {
+            Set2DCell(data, width, height, y, x, (line[x]) ? 1 : 0);
+//            data[y*c+x] =
         }
     }
+//    PrintArray(data, width, height);
+    _closeinpgm();
+    printf("DataInStream:Done...\n");
+    return {width, height};
 }
 
-[[distributable]]
-void DataOutStream(char outfname[], server data_if dist) { //convert to use interface.
-
-
-    while(1) {
-        select {
-            case dist.transferData(uchar data[], unsigned &rows, unsigned &cols):
-        int res;
-            uchar line[SLSZ];
-                //Open PGM file
-                printf("DataOutStream:Start...\n");
-                res = _openoutpgm(outfname, cols, rows);
-                printf("DataOutStream opened file\n");
-                if (res) {
-                    printf("DataOutStream:Error opening %s\n.", outfname);
-                    return;
-                }
-
-                for(int y=0; y<rows; y++) {
-                    for(int x=0; x<cols; x++) {
-                        line[x] = (data[y*cols+x]) ? 255 : 0;
-                    }
-                    _writeoutline(line, cols);
-                }
-                _closeoutpgm();
-                printf("DataOutStream:Done...\n");
-                break;
-        }
+void DataOut(char outfname[], int data[], int rows, int cols) {
+    int res;
+    uchar line[SLSZ];
+    //Open PGM file
+    printf("DataOutStream:Start...\n");
+    res = _openoutpgm(outfname, cols, rows);
+    printf("DataOutStream opened file\n");
+    if (res) {
+        printf("DataOutStream:Error opening %s\n.", outfname);
+        return;
     }
+
+    for(int y=0; y<rows; y++) {
+        for(int x=0; x<cols; x++) {
+//                        line[x] = (data[y*cols+x]) ? 255 : 0;
+            line[x] = Get2DCell(data, cols, rows, y, x) ? 255 : 0;
+        }
+        _writeoutline(line, cols);
+    }
+    _closeoutpgm();
+    printf("DataOutStream:Done...\n");
 }

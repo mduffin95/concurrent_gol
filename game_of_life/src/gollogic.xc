@@ -6,15 +6,19 @@
  */
 #include "gollogic.h"
 #include "types.h"
+#include "bitarray.h"
 #include <stdio.h>
 
-uchar calcGol(uchar *cell, unsigned size, unsigned row, unsigned col) {
-    int left = (size+col-1)%size - col; //value to add to go left
-    int right = (col+1)%size - col;
-    uchar box[9] = {*(cell+left-size), *(cell-size), *(cell+right-size), *(cell+left), *cell, *(cell+right), *(cell+left+size), *(cell+size), *(cell+right+size)};
-    uchar neighbours = *(cell+left-size) + *(cell-size) + *(cell+right-size) + *(cell+left) + *(cell+right) + *(cell+left+size) + *(cell+size) + *(cell+right+size);
+int calcGol(int grid[], int width, int height, int row, int col) {
+//    int left = (size+col-1)%size - col; //value to add to go left
+//    int right = (col+1)%size - col;
+    int neighbours = findNeighbours(grid, width, height, row, col);
+
+            /*Get2DCell(grid, width, height, row-1, col-1) + Get2DCell(grid, width, height, row-1, col) + Get2DCell(grid, width, height, row-1, col+1)
+            + Get2DCell(grid, width, height, row, col-1) + Get2DCell(grid, width, height, row, col+1) + Get2DCell(grid, width, height, row+1, col-1)
+            + Get2DCell(grid, width, height, row+1, col) + Get2DCell(grid, width, height, row+1, col+1);*/
 //    printf("after neighbours\n");
-    uchar live = *cell;
+    int live = Get2DCell(grid, width, height, row, col);
 //    printf("inside calcgol\n");
     if (live) {
 //        printf("Cell (%u, %u) has %u neighbours. [%u, %u, %u, %u, %u, %u, %u, %u, %u]\n", row, col, neighbours, box[0], box[1], box[2], box[3], box[4], box[5], box[6], box[7], box[8]);
@@ -30,4 +34,15 @@ uchar calcGol(uchar *cell, unsigned size, unsigned row, unsigned col) {
         }
         return 0; //Stays dead
     }
+}
+
+int findNeighbours(int grid[], int width, int height, int row, int col) {
+    int result = 0;
+    for (int i=-1; i<2; i++) {
+        for (int j=-1; j<2; j++) {
+            result += Get2DCell(grid, width, height, row+i, (col+j+width)%width);
+        }
+    }
+    result -= Get2DCell(grid, width, height, row, col);
+    return result;
 }

@@ -11,6 +11,8 @@
 
 #include "types.h"
 
-uchar calcGol(uchar *cell, unsigned size, unsigned row, unsigned col);
+int calcGol(int grid[], int width, int height, int row, int col);
+
+int findNeighbours(int grid[], int width, int height, int row, int col);
 
 #endif /* GOLLOGIC_H_ */

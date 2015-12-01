@@ -5,7 +5,7 @@ FILE *_OUTFP = NULL;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //Line-wise pgm in:
-int _openinpgm(char fname[], unsigned wh[])
+int _openinpgm(char fname[], unsigned hw[])
 {
 	char str[ 64 ];
     unsigned inwidth, inheight;
@@ -25,8 +25,8 @@ int _openinpgm(char fname[], unsigned wh[])
 //    	printf( "Input image size(%dx%d) does not = %dx%d or trouble reading header\n", inwidth, inheight, width, height );
 //    	return -1;
 //    }
-    wh[1] = inwidth;
-    wh[0] = inheight;
+    hw[0] = inheight;
+    hw[1] = inwidth;
     fgets( str, 64, _INFP ); //bit depth, must be 255
 	return 0;
 }
