@@ -42,7 +42,7 @@ int main(void) {
                         i_explorer_leds[2], i_explorer_leds[3]);
         on tile[0] : i2c_master(i2c, 1, p_scl, p_sda, 10);   //server thread providing accelerometer data
         on tile[0] : accelerometer(i2c[0], c_acc_dist);        //client thread reading accelerometer data.
-        on tile[0] : DataInStream("128x128.pgm", reader);          //thread to read in a PGM image
+        on tile[0] : DataInStream("test.pgm", reader);          //thread to read in a PGM image
         on tile[0] : DataOutStream("testout.pgm", writer);       //thread to write out a PGM image. Distributable.
         on tile[0] : distributor(b, d, WORKERS, gpio, reader, writer, c_acc_dist);//thread to coordinate work on image
         on tile[0] : par (int i=0; i<WORKERS/2 - 2; i++) {

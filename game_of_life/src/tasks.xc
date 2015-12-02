@@ -80,8 +80,9 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
     uchar grid [GRIDSZ];
     unsigned rows_g, cols_g; // "global" rows and columns values
     unsigned round_g = 1;
+    gpio.setGreen(1);
     reader.transferData(grid, rows_g, cols_g); //This fills in height and width
-
+    gpio.setGreen(0);
     int upload_count = 0; // How many workers have given slice back to grid.
     unsigned pause_round = 0; //The round number on which to pause.
     unsigned slices_round = 0; //The round number on which to retrieve slices.

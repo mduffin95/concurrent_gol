@@ -61,12 +61,15 @@ void gpioHandler(server but_led_if dist, client input_gpio_if button_0, client i
             break;
         case dist.setGreen(unsigned a):
             rgb_led_green.output(a);
+            printf("Green LED\n");
             break;
         case dist.setRed(unsigned a):
-            rgb_led_green.output(a);
+            rgb_led_red.output(a);
+            printf("Red LED\n");
             break;
         case dist.setBlue(unsigned a):
             rgb_led_blue.output(a);
+            printf("Blue LED\n");
             break;
         case dist.getButton() -> uchar p:
             p = last_pressed;
@@ -122,7 +125,7 @@ void accelerometer(client interface i2c_master_if i2c, chanend dist) {
             break;
         case 3:
             if(x<=30 && x>=-30) {
-                state = 0; //Still flat, so go to flat state
+                state = 0; //Still flat, so go to flat state3
                 dist <: 0;
             }
             else state = 2;
@@ -137,7 +140,6 @@ void DataInStream(char infname[], server data_if dist) { //There would be no poi
     int res;
     uchar line[SLSZ];
     printf("DataInStream: Start...\n");
-    dist.setGreen(1);
 
     //Open PGM file
     unsigned rc[2]; //Only way I could work out how to get data back.
@@ -159,7 +161,6 @@ void DataInStream(char infname[], server data_if dist) { //There would be no poi
                 }
                 _closeinpgm();
                 printf("DataInStream:Done...\n");
-                dist.setGreen(0);
                 break;
         }
     }

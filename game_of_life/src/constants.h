@@ -11,8 +11,8 @@
 
 //#define  IMHT 16                  //image height
 //#define  IMWD 16                  //image width
-#define  SLSZ 45000                 //slice array length
-#define  GRIDSZ 262144              //grid array size
+#define  SLSZ 512                 //slice array length
+#define  GRIDSZ 2621              //grid array size
 #define  WORKERS 6                //number of workers
 
 #define PAUSE 1
