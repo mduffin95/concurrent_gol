@@ -79,17 +79,23 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
     int grid [GRIDSZ];
     unsigned rows_g, cols_g; // "global" rows and columns values
     unsigned round_g = 1;
-    {rows_g, cols_g} = DataIn("512x512.pgm", grid);
+    gpio.setGreen(1);
+    {rows_g, cols_g} = DataIn("128x128.pgm", grid);
+    gpio.setGreen(0);
 //    reader.transferData(grid, rows_g, cols_g); //This fills in height and width
 
     int upload_count = 0; // How many workers have given slice back to grid.
     unsigned pause_round = 0; //The round number on which to pause.
     unsigned slices_round = 0; //The round number on which to retrieve slices.
-
+    int alt_round = 1;
 
     int remainder = rows_g % n;
     int rows_per_worker = (rows_g - remainder) / n;
     while(1) {
+        if (alt_round%2==1){
+            gpio.toggleGreen2();
+        }
+        alt_round++;
         [[ordered]]
         select {
         case gpio.event():
@@ -97,12 +103,14 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             printf("Button %u was pressed.\n", button);
             if(button == 1) {
                 slices_round = round_g + 1;
+                gpio.setBlue(1);
             }
             break;
         case acc :> int tilted:
             if (!tilted) {
                 for(int i=0; i<n; i++) {
                     c[i].resume(); //Resume them all.
+                    gpio.setRed(0);
                 }
                 pause_round = 0;
             } else { //Tilted
@@ -122,6 +130,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             if (round_g < round) round_g = round;
             if (pause_round == round) {
                 return_code = PAUSE;
+                gpio.setRed(1);
                 printf("Process %u is reporting. Round = %u. Live = %u\n", i, round, live);
             }
             else if (slices_round == round) return_code = UPLOAD;
@@ -137,6 +146,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
                 unsigned rows_tmp = rows_g;
                 unsigned cols_tmp = cols_g; //For security, as I am passing references.
                 DataOut("testout.pgm", grid, rows_tmp, cols_tmp);
+                gpio.setBlue(0);
                 upload_count = 0;
             }
             break;

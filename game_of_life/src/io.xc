@@ -64,7 +64,7 @@ void gpioHandler(server but_led_if dist, client input_gpio_if button_0, client i
             rgb_led_green.output(a);
             break;
         case dist.setRed(unsigned a):
-            rgb_led_green.output(a);
+            rgb_led_red.output(a);
             break;
         case dist.setBlue(unsigned a):
             rgb_led_blue.output(a);
