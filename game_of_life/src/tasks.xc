@@ -20,7 +20,11 @@ void sliceWorker(client farmer_if dist_control, client data_if dist_data, stream
     int *data_curr = d1;
     int *data_next = d2;
     unsigned rows, cols;
-    {rows, cols} = dist_control.getSlice(data_curr);
+    select { //Waits until the data is ready before retrieving slice.
+        case dist_data.sliceReady():
+            {rows, cols} = dist_data.getSlice(data_curr);
+            break;
+    }
     unsigned round = 1;
     int *slice = data_curr+IntWidth(cols);
     int paused = 0;
@@ -76,26 +80,25 @@ void sliceWorker(client farmer_if dist_control, client data_if dist_data, stream
 }
 
 void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client but_led_if gpio, chanend acc) {
-    int grid [GRIDSZ];
+    int grid [GRIDSZ] = {0};
     unsigned rows_g, cols_g; // "global" rows and columns values
     unsigned round_g = 1;
-    gpio.setGreen(1);
-    {rows_g, cols_g} = DataIn("128x128.pgm", grid);
-    gpio.setGreen(0);
+
 //    reader.transferData(grid, rows_g, cols_g); //This fills in height and width
 
     int upload_count = 0; // How many workers have given slice back to grid.
+    int pause_count = 0;
     unsigned pause_round = 0; //The round number on which to pause.
     unsigned slices_round = 0; //The round number on which to retrieve slices.
-    int alt_round = 1;
+    unsigned tot_live = 0;
+//    int alt_round = 1;
 
-    int remainder = rows_g % n;
-    int rows_per_worker = (rows_g - remainder) / n;
+    int remainder, rows_per_worker;
     while(1) {
-        if (alt_round%2==1){
-            gpio.toggleGreen2();
-        }
-        alt_round++;
+//        if (alt_round%2==1){
+//            gpio.toggleGreen2();
+//        }
+//        alt_round++;
         [[ordered]]
         select {
         case gpio.event():
@@ -104,6 +107,16 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             if(button == 1) {
                 slices_round = round_g + 1;
                 gpio.setBlue(1);
+            } else {
+                gpio.setGreen(1);
+                {rows_g, cols_g} = DataIn("128x128.pgm", grid);
+                gpio.setGreen(0);
+
+                for (int i=0; i<n; i++) d[i].sliceReady();
+
+                //Initialise these now we now rows and cols.
+                remainder = rows_g % n;
+                rows_per_worker = (rows_g - remainder) / n;
             }
             break;
         case acc :> int tilted:
@@ -118,7 +131,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             }
             break;
         //Initially send each slice to each worker.
-        case c[int i].getSlice(int inData[]) -> {unsigned rows_return, unsigned cols_return}:
+        case d[int i].getSlice(int inData[]) -> {unsigned rows_return, unsigned cols_return}:
             printf("Process %u is retrieving data.\n", i);
             rows_return = (i==n-1) ? rows_per_worker+remainder : rows_per_worker;
             cols_return = cols_g;
@@ -127,11 +140,20 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             break;
         //Gather data from each worker. Send back code to tell them what to do.
         case c[int i].report(unsigned round, unsigned live) -> int return_code:
-            if (round_g < round) round_g = round;
+            if (round_g < round) {
+                round_g = round;
+                gpio.toggleGreen2();
+            }
             if (pause_round == round) {
-                return_code = PAUSE;
-                gpio.setRed(1);
                 printf("Process %u is reporting. Round = %u. Live = %u\n", i, round, live);
+                return_code = PAUSE;
+                tot_live += live;
+                if (pause_count++ == 0) gpio.setRed(1);
+                else if (pause_count == n) {
+                    printf("Report: round = %u, live = %u\n", round_g, tot_live);
+                    pause_count = 0;
+                    tot_live = 0;
+                }
             }
             else if (slices_round == round) return_code = UPLOAD;
             else return_code = 0;

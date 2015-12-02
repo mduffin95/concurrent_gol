@@ -13,7 +13,6 @@
 #include "io.h"
 
 typedef interface farmer_if {
-    {unsigned, unsigned} getSlice(int slice[]); //This can go.
 
     [[clears_notification]]
     int report(unsigned round, unsigned live); //return value determines whether worker should pause or not.

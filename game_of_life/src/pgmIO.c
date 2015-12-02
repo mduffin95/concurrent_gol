@@ -20,11 +20,6 @@ int _openinpgm(char fname[], unsigned hw[])
     fgets( str, 64, _INFP ); //Version: P5
     fgets( str, 64, _INFP ); //width and height
     sscanf( str, "%u%u", &inwidth, &inheight );
-//    if( inwidth != width || inheight != height )
-//    {
-//    	printf( "Input image size(%dx%d) does not = %dx%d or trouble reading header\n", inwidth, inheight, width, height );
-//    	return -1;
-//    }
     hw[0] = inheight;
     hw[1] = inwidth;
     fgets( str, 64, _INFP ); //bit depth, must be 255

@@ -29,10 +29,13 @@ typedef interface but_led_if {
 
 typedef interface data_if {
     [[clears_notification]]
-    void transferData(int data[], unsigned rows, unsigned cols); //Takes a reference so we can give a length if writing data.
+    {unsigned, unsigned} getSlice(int slice[]);
+
+    [[clears_notification]]
+    void transferData(int data[], unsigned rows, unsigned cols);
 
     [[notification]]
-    slave void requestTransfer(void);
+    slave void sliceReady(void);
 } data_if;
 
 void gpioHandler(server but_led_if dist, client input_gpio_if button_0, client input_gpio_if button_1,

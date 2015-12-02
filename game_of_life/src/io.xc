@@ -14,6 +14,7 @@
 #include "types.h"
 #include "pgmIO.h"
 #include "bitarray.h"
+#include <timer.h>
 
 void gpioHandler(server but_led_if dist, client input_gpio_if button_0, client input_gpio_if button_1,
         client output_gpio_if led_green, client output_gpio_if rgb_led_blue,
@@ -134,6 +135,9 @@ void accelerometer(client interface i2c_master_if i2c, chanend dist) {
 }
 
 {unsigned, unsigned} DataIn(char infname[], int data[]) { //There would be no point making this distributable. May as well have a normal function.
+    timer t;
+    unsigned start_time, end_time;
+    t :> start_time;
     int res;
     uchar line[SLSZ];
     printf("DataInStream: Start...\n");
@@ -150,13 +154,18 @@ void accelerometer(client interface i2c_master_if i2c, chanend dist) {
     for(int y=0; y<height; y++) {
         _readinline(line, width);
         for(int x=0; x<width; x++) {
-            Set2DCell(data, width, height, y, x, (line[x]) ? 1 : 0);
+//            if (line[x]) { //This method doesn't seem to make any significant difference to time.
+//                Set2DCell(data, width, height, y, x, 1);
+//            }
+            Set2DCell(data, width, height, y, x, (line[x]) ? 1 : 0); //This method allows for restart.
 //            data[y*c+x] =
         }
     }
 //    PrintArray(data, width, height);
     _closeinpgm();
+    t :> end_time;
     printf("DataInStream:Done...\n");
+    printf ("Number of timer ticks elapsed : % u\n" , end_time - start_time );
     return {width, height};
 }
 
