@@ -61,15 +61,12 @@ void gpioHandler(server but_led_if dist, client input_gpio_if button_0, client i
             break;
         case dist.setGreen(unsigned a):
             rgb_led_green.output(a);
-            printf("Green LED\n");
             break;
         case dist.setRed(unsigned a):
             rgb_led_red.output(a);
-            printf("Red LED\n");
             break;
         case dist.setBlue(unsigned a):
             rgb_led_blue.output(a);
-            printf("Blue LED\n");
             break;
         case dist.getButton() -> uchar p:
             p = last_pressed;

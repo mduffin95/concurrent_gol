@@ -91,6 +91,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
     int remainder = rows_g % n;
     int rows_per_worker = (rows_g - remainder) / n;
     while(1) {
+        gpio.toggleGreen2();
         [[ordered]]
         select {
         case gpio.event():
@@ -98,12 +99,14 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             printf("Button %u was pressed.\n", button);
             if(button == 1) {
                 slices_round = round_g + 1;
+                gpio.setBlue(1);
             }
             break;
         case acc :> int tilted:
             if (!tilted) {
                 for(int i=0; i<n; i++) {
                     c[i].resume(); //Resume them all.
+                    gpio.setRed(0);
                 }
                 pause_round = 0;
             } else { //Tilted
@@ -124,6 +127,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             if (pause_round == round) {
                 return_code = PAUSE;
                 printf("Process %u is reporting. Round = %u. Live = %u\n", i, round, live);
+                gpio.setRed(1);
             }
             else if (slices_round == round) return_code = UPLOAD;
             else return_code = 0;
@@ -135,6 +139,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             if (++upload_count == n) {
                 for (int y = 0; y < rows_g; y++) {
                     for (int x = 0; x < cols_g; x++) {
+
                         printf("-%4.1d ", grid[y*cols_g+x]); //show image values
                     }
                     printf("\n");
@@ -142,6 +147,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
                 unsigned rows_tmp = rows_g;
                 unsigned cols_tmp = cols_g; //For security, as I am passing references.
                 writer.transferData(grid, rows_tmp, cols_tmp);
+                gpio.setBlue(0);
                 upload_count = 0;
             }
             break;
