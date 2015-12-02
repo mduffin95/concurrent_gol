@@ -13,8 +13,9 @@
 //#define  IMWD 16                  //image width
 #define SLSZ 2000                 //slice array length
 #define GRIDSZ 10000              //grid array size
-#define WORKERS 6                //number of workers
-#define ROUNDTIME 100
+#define WORKERS 4                //number of workers
+//#define MAXWRK 7
+#define RNDTIME 100
 
 #define CONTINUE 0
 #define PAUSE 1

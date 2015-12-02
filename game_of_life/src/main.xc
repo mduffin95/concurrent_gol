@@ -24,6 +24,7 @@ int main(void) {
     //char outfname[] = "testout.pgm"; //put your output image path here
     chan c_acc_dist;    //extend your channel definitions here
 
+
     farmer_if b[WORKERS];
     streaming chan c[WORKERS];
     data_if d[WORKERS];
@@ -42,13 +43,11 @@ int main(void) {
                         i_explorer_leds[2], i_explorer_leds[3]);
         on tile[0] : i2c_master(i2c, 1, p_scl, p_sda, 10);   //server thread providing accelerometer data
         on tile[0] : accelerometer(i2c[0], c_acc_dist);        //client thread reading accelerometer data.
-//        on tile[0] : DataInStream("128x128.pgm", reader);          //thread to read in a PGM image
-//        on tile[0] : DataOutStream("testout.pgm", writer);       //thread to write out a PGM image. Distributable.
         on tile[0] : distributor(b, d, WORKERS, gpio, c_acc_dist);//thread to coordinate work on image
-        on tile[0] : par (int i=0; i<WORKERS/2 - 2; i++) {
+        on tile[0] : par (int i=0; i<WORKERS/4; i++) {
             sliceWorker(b[i], d[i], c[i], c[(i+1)%WORKERS]);
         }
-        on tile[1]: par (int i=WORKERS/2 - 2; i<WORKERS; i++) {
+        on tile[1]: par (int i=WORKERS/4; i<WORKERS; i++) {
             sliceWorker(b[i], d[i], c[i], c[(i+1)%WORKERS]);
         }
     }

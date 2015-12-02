@@ -105,7 +105,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
                 gpio.setBlue(1);
             } else {
                 gpio.setGreen(1);
-                {rows_g, cols_g} = DataIn("glider2.pgm", grid);
+                {cols_g, rows_g} = DataIn("recttest.pgm", grid);
                 t :> start_time;
                 gpio.setGreen(0);
 
@@ -141,7 +141,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
                 gpio.toggleGreen2();
                 unsigned end_time;
                 t :> end_time;
-                if(round_g == ROUNDTIME) printf("Time to %d rounds is %d\n", ROUNDTIME, end_time-start_time);
+                if(round_g == RNDTIME) printf("Time to %d rounds is %d\n", RNDTIME, end_time-start_time);
             }
             if (pause_round == round) {
 //                printf("Process %u is reporting. Round = %u. Live = %u\n", i, round, live);
