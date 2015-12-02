@@ -82,7 +82,7 @@ void sliceWorker(client farmer_if dist_control, client data_if dist_data, stream
 void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client but_led_if gpio, chanend acc) {
     int grid [GRIDSZ];
     unsigned rows_g, cols_g; // "global" (to the function) rows and columns values
-    unsigned round_g = 1;
+    unsigned round_g = 0;
 
     int upload_count = 0; // How many workers have given slice back to grid.
     int pause_count = 0;
@@ -105,7 +105,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
                 gpio.setBlue(1);
             } else {
                 gpio.setGreen(1);
-                {rows_g, cols_g} = DataIn("128x128.pgm", grid);
+                {rows_g, cols_g} = DataIn("glider2.pgm", grid);
                 t :> start_time;
                 gpio.setGreen(0);
 
@@ -129,7 +129,6 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             break;
         //Initially send each slice to each worker.
         case d[int i].getSlice(int inData[]) -> {unsigned rows_return, unsigned cols_return}:
-            printf("Process %u is retrieving data.\n", i);
             rows_return = (i==n-1) ? rows_per_worker+remainder : rows_per_worker;
             cols_return = cols_g;
             int k = IntWidth(cols_g);
@@ -140,6 +139,9 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             if (round_g < round) {
                 round_g = round;
                 gpio.toggleGreen2();
+                unsigned end_time;
+                t :> end_time;
+                if(round_g == ROUNDTIME) printf("Time to %d rounds is %d\n", ROUNDTIME, end_time-start_time);
             }
             if (pause_round == round) {
 //                printf("Process %u is reporting. Round = %u. Live = %u\n", i, round, live);
@@ -159,7 +161,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             break;
         //Get slices from workers and copy back to main grid array. Output to file.
         case d[int i].transferData(int slice[], unsigned r, unsigned c):
-            printf("Process %u is transferring.\n", i, slice[0]);
+//            printf("Process %u is transferring.\n", i, slice[0]);
             int k = IntWidth(cols_g);
             memcpy(grid+rows_per_worker*i*k, slice, r*k*sizeof(int)); //Copy slice into grid.
             if (++upload_count == n) {
