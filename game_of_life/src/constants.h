@@ -15,6 +15,7 @@
 #define  GRIDSZ 10000              //grid array size
 #define  WORKERS 6                //number of workers
 
+#define CONTINUE 0
 #define PAUSE 1
 #define UPLOAD 2
 

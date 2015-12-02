@@ -158,7 +158,6 @@ void accelerometer(client interface i2c_master_if i2c, chanend dist) {
 //                Set2DCell(data, width, height, y, x, 1);
 //            }
             Set2DCell(data, width, height, y, x, (line[x]) ? 1 : 0); //This method allows for restart.
-//            data[y*c+x] =
         }
     }
 //    PrintArray(data, width, height);

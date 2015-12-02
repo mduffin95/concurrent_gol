@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h> //for memcpy
 #include <xs1.h>
+#include <timer.h>
 
 void sliceWorker(client farmer_if dist_control, client data_if dist_data, streaming chanend top_c, streaming chanend bot_c) {
     int d1[SLSZ], d2[SLSZ];
@@ -21,9 +22,9 @@ void sliceWorker(client farmer_if dist_control, client data_if dist_data, stream
     int *data_next = d2;
     unsigned rows, cols;
     select { //Waits until the data is ready before retrieving slice.
-        case dist_data.sliceReady():
-            {rows, cols} = dist_data.getSlice(data_curr);
-            break;
+    case dist_data.sliceReady():
+        {rows, cols} = dist_data.getSlice(data_curr);
+        break;
     }
     unsigned round = 1;
     int *slice = data_curr+IntWidth(cols);
@@ -48,8 +49,7 @@ void sliceWorker(client farmer_if dist_control, client data_if dist_data, stream
                 for (int y=0; y<rows; y++) {
                     for (int x=0; x<cols; x++) {
                         Set2DCell(data_next+IntWidth(cols), cols, rows, y, x, calcGol(slice, cols, rows, y, x));
-//                        data_next[cols+y*cols+x] = calcGol(slice+y*cols+x, cols, y, x);
-                        if(Get2DCell(data_next, cols, rows, y, x)) {
+                        if(Get2DCell(data_next+IntWidth(cols), cols, rows, y, x)) {
                             live++;
                         }
                     }
@@ -80,27 +80,23 @@ void sliceWorker(client farmer_if dist_control, client data_if dist_data, stream
 }
 
 void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client but_led_if gpio, chanend acc) {
-    int grid [GRIDSZ] = {0};
-    unsigned rows_g, cols_g; // "global" rows and columns values
+    int grid [GRIDSZ];
+    unsigned rows_g, cols_g; // "global" (to the function) rows and columns values
     unsigned round_g = 1;
-
-//    reader.transferData(grid, rows_g, cols_g); //This fills in height and width
 
     int upload_count = 0; // How many workers have given slice back to grid.
     int pause_count = 0;
     unsigned pause_round = 0; //The round number on which to pause.
     unsigned slices_round = 0; //The round number on which to retrieve slices.
     unsigned tot_live = 0;
-//    int alt_round = 1;
-
     int remainder, rows_per_worker;
+
+    timer t;
+    unsigned start_time;
     while(1) {
-//        if (alt_round%2==1){
-//            gpio.toggleGreen2();
-//        }
-//        alt_round++;
-        [[ordered]]
+        [[ordered]] //Means distributor will respond to input more quickly.
         select {
+        //Buttons
         case gpio.event():
             uchar button = gpio.getButton();
             printf("Button %u was pressed.\n", button);
@@ -110,21 +106,22 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             } else {
                 gpio.setGreen(1);
                 {rows_g, cols_g} = DataIn("128x128.pgm", grid);
+                t :> start_time;
                 gpio.setGreen(0);
 
-                for (int i=0; i<n; i++) d[i].sliceReady();
-
-                //Initialise these now we now rows and cols.
+                //Initialise these now we know rows and cols.
                 remainder = rows_g % n;
                 rows_per_worker = (rows_g - remainder) / n;
+
+                for (int i=0; i<n; i++) d[i].sliceReady(); //Tell workers to collect slices now that data has been read in.
             }
             break;
+        //Accelerometer
         case acc :> int tilted:
             if (!tilted) {
-                for(int i=0; i<n; i++) {
+                for(int i=0; i<n; i++)
                     c[i].resume(); //Resume them all.
-                    gpio.setRed(0);
-                }
+                gpio.setRed(0);
                 pause_round = 0;
             } else { //Tilted
                 pause_round = round_g + 1;
@@ -145,18 +142,20 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
                 gpio.toggleGreen2();
             }
             if (pause_round == round) {
-                printf("Process %u is reporting. Round = %u. Live = %u\n", i, round, live);
+//                printf("Process %u is reporting. Round = %u. Live = %u\n", i, round, live);
                 return_code = PAUSE;
                 tot_live += live;
                 if (pause_count++ == 0) gpio.setRed(1);
                 else if (pause_count == n) {
-                    printf("Report: round = %u, live = %u\n", round_g, tot_live);
+                    unsigned end_time;
+                    t :> end_time;
+                    printf("Report: round = %u, live = %u, time = %u\n", round_g, tot_live, end_time-start_time);
                     pause_count = 0;
                     tot_live = 0;
                 }
             }
             else if (slices_round == round) return_code = UPLOAD;
-            else return_code = 0;
+            else return_code = CONTINUE; //Continue as normal
             break;
         //Get slices from workers and copy back to main grid array. Output to file.
         case d[int i].transferData(int slice[], unsigned r, unsigned c):
@@ -165,9 +164,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
             memcpy(grid+rows_per_worker*i*k, slice, r*k*sizeof(int)); //Copy slice into grid.
             if (++upload_count == n) {
 //                PrintArray(grid, cols_g, rows_g);
-                unsigned rows_tmp = rows_g;
-                unsigned cols_tmp = cols_g; //For security, as I am passing references.
-                DataOut("testout.pgm", grid, rows_tmp, cols_tmp);
+                DataOut("testout.pgm", grid, rows_g, cols_g);
                 gpio.setBlue(0);
                 upload_count = 0;
             }
