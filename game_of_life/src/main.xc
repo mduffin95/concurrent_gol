@@ -50,6 +50,7 @@ int main(void) {
         on tile[1]: par (int i=WORKERS/4; i<WORKERS; i++) {
             sliceWorker(b[i], d[i], c[i], c[(i+1)%WORKERS]);
         }
+        //on tile[0] : par (int i=((WORKERS<5) ? WORKERS : 5); i<WORKERS; i++) {
     }
     return 0;
 }

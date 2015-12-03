@@ -140,13 +140,13 @@ void accelerometer(client interface i2c_master_if i2c, chanend dist) {
     t :> start_time;
     int res;
     uchar line[SLSZ];
-    printf("DataInStream: Start...\n");
+    printf("DataIn: Start...\n");
 
     //Open PGM file
     unsigned hw[2]; //Only way I could work out how to get data back.
     res = _openinpgm(infname, hw);
     if (res) {
-        printf("DataInStream: Error openening %s\n.", infname);
+        printf("DataIn: Error openening %s\n.", infname);
         return {0, 0};
     }
     unsigned height = hw[0];
@@ -163,7 +163,7 @@ void accelerometer(client interface i2c_master_if i2c, chanend dist) {
 //    PrintArray(data, width, height);
     _closeinpgm();
     t :> end_time;
-    printf("DataInStream:Done...\n");
+    printf("DataIn:Done...\n");
     printf ("Number of timer ticks elapsed : % u\n" , end_time - start_time );
     return {width, height};
 }
@@ -172,11 +172,11 @@ void DataOut(char outfname[], int data[], int rows, int cols) {
     int res;
     uchar line[SLSZ];
     //Open PGM file
-    printf("DataOutStream:Start...\n");
+    printf("DataOut:Start...\n");
     res = _openoutpgm(outfname, cols, rows);
-    printf("DataOutStream opened file\n");
+    printf("DataOut opened file\n");
     if (res) {
-        printf("DataOutStream:Error opening %s\n.", outfname);
+        printf("DataOut:Error opening %s\n.", outfname);
         return;
     }
 
@@ -188,5 +188,5 @@ void DataOut(char outfname[], int data[], int rows, int cols) {
         _writeoutline(line, cols);
     }
     _closeoutpgm();
-    printf("DataOutStream:Done...\n");
+    printf("DataOut:Done...\n");
 }

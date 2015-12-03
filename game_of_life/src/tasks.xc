@@ -99,13 +99,13 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
         //Buttons
         case gpio.event():
             uchar button = gpio.getButton();
-            printf("Button %u was pressed.\n", button);
+//            printf("Button %u was pressed.\n", button);
             if(button == 1) {
                 slices_round = round_g + 1;
                 gpio.setBlue(1);
             } else {
                 gpio.setGreen(1);
-                {cols_g, rows_g} = DataIn("recttest.pgm", grid);
+                {cols_g, rows_g} = DataIn("512x512.pgm", grid);
                 t :> start_time;
                 gpio.setGreen(0);
 

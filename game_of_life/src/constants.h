@@ -11,9 +11,9 @@
 
 //#define  IMHT 16                  //image height
 //#define  IMWD 16                  //image width
-#define SLSZ 2000                 //slice array length
+#define SLSZ 5000                 //slice array length
 #define GRIDSZ 10000              //grid array size
-#define WORKERS 4                //number of workers
+#define WORKERS 7                //number of workers
 //#define MAXWRK 7
 #define RNDTIME 100
 
