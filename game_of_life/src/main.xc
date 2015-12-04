@@ -20,8 +20,6 @@ int main(void) {
 
     interface i2c_master_if i2c[1];               //interface to accelerometer
 
-    //char infname[] = "test.pgm";     //put your input image path here
-    //char outfname[] = "testout.pgm"; //put your output image path here
     chan c_acc_dist;    //extend your channel definitions here
 
 
@@ -32,8 +30,6 @@ int main(void) {
     input_gpio_if i_explorer_buttons[2];
     output_gpio_if i_explorer_leds[4];
     but_led_if gpio;
-
-//    data_if reader, writer;
 
     par {
         on tile[0] : input_gpio_with_events(i_explorer_buttons, 2, explorer_buttons, null); //buttons
@@ -50,7 +46,6 @@ int main(void) {
         on tile[1]: par (int i=WORKERS/4; i<WORKERS; i++) {
             sliceWorker(b[i], d[i], c[i], c[(i+1)%WORKERS]);
         }
-        //on tile[0] : par (int i=((WORKERS<5) ? WORKERS : 5); i<WORKERS; i++) {
     }
     return 0;
 }

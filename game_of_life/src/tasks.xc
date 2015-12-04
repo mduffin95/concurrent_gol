@@ -39,7 +39,7 @@ void sliceWorker(client farmer_if dist_control, client data_if dist_data, stream
             break;
         default:
             if (!paused) {
-                for(int i=0; i<IntWidth(cols); i++) {
+                for(int i=0; i<IntWidth(cols); i++) { //Transfer data with neighbours
                     top_c <: slice[i];
                     bot_c <: slice[(rows-1)*IntWidth(cols)+i];
                     top_c :> top_arr[i];
@@ -105,7 +105,7 @@ void distributor(server farmer_if c[n], server data_if d[n], unsigned n, client 
                 gpio.setBlue(1);
             } else {
                 gpio.setGreen(1);
-                {cols_g, rows_g} = DataIn("512x512.pgm", grid);
+                {cols_g, rows_g} = DataIn("128x128.pgm", grid);
                 t :> start_time;
                 gpio.setGreen(0);
 

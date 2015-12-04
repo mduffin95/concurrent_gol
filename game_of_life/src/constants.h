@@ -9,15 +9,13 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
-//#define  IMHT 16                  //image height
-//#define  IMWD 16                  //image width
+
 #define SLSZ 5000                 //slice array length
 #define GRIDSZ 10000              //grid array size
 #define WORKERS 7                //number of workers
-//#define MAXWRK 7
-#define RNDTIME 100
+#define RNDTIME 100              //Number of rounds to time
 
-#define CONTINUE 0
+#define CONTINUE 0 //Return codes from report function
 #define PAUSE 1
 #define UPLOAD 2
 
